@@ -19,7 +19,6 @@
 		"base/tools.lua",
 		"base/tree.lua",
 		"base/globals.lua",
-		"base/moduledownloader.lua",
 		"base/semver.lua",
 		"base/http.lua",
 		"base/json.lua",
@@ -63,6 +62,7 @@
 		"tools/msc.lua",
 		"tools/snc.lua",
 		"tools/clang.lua",
+		"tools/mingw.lua",
 
 		-- Clean action
 		"actions/clean/_clean.lua",

@@ -63,7 +63,8 @@
 		warnings = gcc.shared.warnings,
 		symbols = gcc.shared.symbols,
 		unsignedchar = gcc.shared.unsignedchar,
-		omitframepointer = gcc.shared.omitframepointer
+		omitframepointer = gcc.shared.omitframepointer,
+		compileas = gcc.shared.compileas
 	}
 
 	clang.cflags = table.merge(gcc.cflags, {
@@ -74,7 +75,7 @@
 		local cflags = config.mapFlags(cfg, clang.cflags)
 
 		local flags = table.join(shared, cflags)
-		flags = table.join(flags, clang.getwarnings(cfg))
+		flags = table.join(flags, clang.getwarnings(cfg), clang.getsystemversionflags(cfg))
 
 		return flags
 	end
@@ -83,6 +84,23 @@
 		return gcc.getwarnings(cfg)
 	end
 
+--
+-- Returns C/C++ system version related build flags
+--
+
+	function clang.getsystemversionflags(cfg)
+		local flags = {}
+
+		if cfg.system == p.MACOSX or cfg.system == p.IOS then
+			local minVersion = p.project.systemversion(cfg)
+			if minVersion ~= nil then
+				local name = iif(cfg.system == p.MACOSX, "macosx", "iphoneos")
+				table.insert (flags, "-m" .. name .. "-version-min=" .. p.project.systemversion(cfg))
+			end
+		end
+
+		return flags
+	end
 
 --
 -- Build a list of C++ compiler flags corresponding to the settings
@@ -102,7 +120,7 @@
 		local shared = config.mapFlags(cfg, clang.shared)
 		local cxxflags = config.mapFlags(cfg, clang.cxxflags)
 		local flags = table.join(shared, cxxflags)
-		flags = table.join(flags, clang.getwarnings(cfg))
+		flags = table.join(flags, clang.getwarnings(cfg), clang.getsystemversionflags(cfg))
 		return flags
 	end
 
@@ -306,9 +324,13 @@
 	clang.tools = {
 		cc = "clang",
 		cxx = "clang++",
-		ar = "ar"
+		ar = function(cfg) return iif(cfg.flags.LinkTimeOptimization, "llvm-ar", "ar") end
 	}
 
 	function clang.gettoolname(cfg, tool)
-		return clang.tools[tool]
+		local value = clang.tools[tool]
+		if type(value) == "function" then
+			value = value(cfg)
+		end
+		return value
 	end

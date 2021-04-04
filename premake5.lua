@@ -51,7 +51,13 @@
 
 
 	newoption {
-		trigger     = "test-only",
+		trigger = "test-all",
+		description = "Run all unit tests, including slower network and I/O"
+	}
+
+
+	newoption {
+		trigger = "test-only",
 		description = "When testing, run only the specified suite or test"
 	}
 
@@ -73,7 +79,7 @@
 		trigger = "no-zlib",
 		description = "Disable Zlib/Zip 3rd party lib"
 	}
-	
+
 	newoption {
 		trigger = "no-luasocket",
 		description = "Disable Luasocket 3rd party lib"
@@ -105,7 +111,7 @@
 		if not _OPTIONS["no-zlib"] then
 			defines { "PREMAKE_COMPRESSION" }
 		end
-		
+
 		if not _OPTIONS["no-curl"] then
 			defines { "CURL_STATICLIB", "PREMAKE_CURL"}
 		end
@@ -126,7 +132,11 @@
 			defines     { "_CRT_SECURE_NO_DEPRECATE", "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_WARNINGS" }
 
 		filter { "system:windows", "configurations:Release" }
-			flags       { "NoIncrementalLink", "LinkTimeOptimization" }
+			flags       { "NoIncrementalLink" }
+
+		-- MinGW AR does not handle LTO out of the box and need a plugin to be setup
+		filter { "system:windows", "configurations:Release", "toolset:not mingw" }
+			flags		{ "LinkTimeOptimization" }
 
 	project "Premake5"
 		targetname  "premake5"
@@ -140,7 +150,7 @@
 			includedirs { "contrib/zlib", "contrib/libzip" }
 			links { "zip-lib", "zlib-lib" }
 		end
-		
+
 		if not _OPTIONS["no-curl"] then
 			includedirs { "contrib/curl/include" }
 			links { "curl-lib" }
@@ -168,7 +178,11 @@
 			targetdir   "bin/release"
 
 		filter "system:windows"
-			links       { "ole32", "ws2_32", "advapi32" }
+			links       { "ole32", "ws2_32", "advapi32", "version" }
+			files { "src/**.rc" }
+
+		filter "toolset:mingw"
+			links		{ "crypt32" }
 
 		filter "system:linux or bsd or hurd"
 			defines     { "LUA_USE_POSIX", "LUA_USE_DLOPEN" }
@@ -206,20 +220,20 @@
 	group "contrib"
 		include "contrib/lua"
 		include "contrib/luashim"
-		
+
 		if not _OPTIONS["no-zlib"] then
 			include "contrib/zlib"
 			include "contrib/libzip"
 		end
-		
+
 		if not _OPTIONS["no-curl"] then
 			include "contrib/mbedtls"
 			include "contrib/curl"
-		end		
+		end
 
 	group "Binary Modules"
 		include "binmodules/example"
-		
+
 		if not _OPTIONS["no-luasocket"] then
 			include "binmodules/luasocket"
 		end

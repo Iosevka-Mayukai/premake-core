@@ -101,9 +101,10 @@
 			RDRND = "-mrdrnd",
 		},
 		warnings = {
-			Extra = {"-Wall", "-Wextra"},
-			High = "-Wall",
 			Off = "-w",
+			High = "-Wall",
+			Extra = {"-Wall", "-Wextra"},
+			Everything = "-Weverything",
 		},
 		symbols = function(cfg, mappings)
 			local values = gcc.getdebugformat(cfg)
@@ -121,6 +122,10 @@
 		omitframepointer = {
 			On = "-fomit-frame-pointer",
 			Off = "-fno-omit-frame-pointer"
+		},
+		compileas = {
+			["Objective-C"] = "-x objective-c",
+			["Objective-C++"] = "-x objective-c++",
 		}
 	}
 
@@ -140,7 +145,7 @@
 	function gcc.getcflags(cfg)
 		local shared_flags = config.mapFlags(cfg, gcc.shared)
 		local cflags = config.mapFlags(cfg, gcc.cflags)
-		local flags = table.join(shared_flags, cflags)
+		local flags = table.join(shared_flags, cflags, gcc.getsystemversionflags(cfg))
 		flags = table.join(flags, gcc.getwarnings(cfg))
 		return flags
 	end
@@ -157,6 +162,23 @@
 			table.insert(result, '-Werror=' .. fatal)
 		end
 		return result
+	end
+
+--
+-- Returns C/C++ system version build flags
+--
+
+	function gcc.getsystemversionflags(cfg)
+		local flags = {}
+
+		if cfg.system == p.MACOSX then
+			local minVersion = p.project.systemversion(cfg)
+			if minVersion ~= nil then
+				table.insert (flags, "-mmacosx-version-min=" .. minVersion)
+			end
+		end
+
+		return flags
 	end
 
 
@@ -179,6 +201,8 @@
 			["C++14"] = "-std=c++14",
 			["C++1z"] = "-std=c++1z",
 			["C++17"] = "-std=c++17",
+			["C++2a"] = "-std=c++2a",
+			["C++20"] = "-std=c++20",
 			["gnu++98"] = "-std=gnu++98",
 			["gnu++0x"] = "-std=gnu++0x",
 			["gnu++11"] = "-std=gnu++11",
@@ -186,6 +210,9 @@
 			["gnu++14"] = "-std=gnu++14",
 			["gnu++1z"] = "-std=gnu++1z",
 			["gnu++17"] = "-std=gnu++17",
+			["gnu++2a"] = "-std=gnu++2a",
+			["gnu++20"] = "-std=gnu++20",
+			["C++latest"] = "-std=c++20",
 		},
 		rtti = {
 			Off = "-fno-rtti"
@@ -205,7 +232,7 @@
 		local shared_flags = config.mapFlags(cfg, gcc.shared)
 		local cxxflags = config.mapFlags(cfg, gcc.cxxflags)
 		local flags = table.join(shared_flags, cxxflags)
-		flags = table.join(flags, gcc.getwarnings(cfg))
+		flags = table.join(flags, gcc.getwarnings(cfg), gcc.getsystemversionflags(cfg))
 		return flags
 	end
 
